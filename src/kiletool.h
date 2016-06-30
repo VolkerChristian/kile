@@ -282,7 +282,7 @@ namespace KileTool
 
 	private:
 		QString			m_name;
-		QString			m_target, m_basedir, m_relativedir, m_targetdir, m_source, m_S, m_workingDir;
+		QString			m_target, m_basedir, m_relativedir, m_targetdir, m_source, m_S, m_workingDir, m_T;
 		QString			m_options;
 		QString			m_resolution;
 

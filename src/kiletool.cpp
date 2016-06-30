@@ -440,7 +440,10 @@ namespace KileTool
 	void Base::setTarget(const QString &target)
 	{
 		m_target = target;
+		QFileInfo info(target);
+		m_T = info.completeBaseName();
 		addDict("%target", m_target);
+		addDict("%T", m_T);
 	}
 
 	void Base::setTargetDir(const QString &target)
@@ -724,7 +727,7 @@ namespace KileTool
 	bool Convert::determineSource()
 	{
 		bool  br = Base::determineSource();
-		setSource(baseDir() + '/' + S() + '.' + from());
+//		setSource(baseDir() + '/' + S() + '.' + from());
 		return br;
 	}
 
