@@ -1,5 +1,5 @@
 /**************************************************************************
-*   Copyright (C) 2006-2008 by Michel Ludwig (michel.ludwig@kdemail.net)  *
+*   Copyright (C) 2006-2016 by Michel Ludwig (michel.ludwig@kdemail.net)  *
 ***************************************************************************/
 
 /**************************************************************************
@@ -155,19 +155,17 @@ namespace KileScript {
 		}
 
 		// scan *.js files
-		QStringList scriptFileNamesList;
-		const QStringList dirs = QStandardPaths::locateAll(QStandardPaths::DataLocation, "script/", QStandardPaths::LocateDirectory);
+		QSet<QString> scriptFileNamesSet;
+		const QStringList dirs = QStandardPaths::locateAll(QStandardPaths::DataLocation, "scripts/", QStandardPaths::LocateDirectory);
 		Q_FOREACH (const QString &dir, dirs) {
-			QDirIterator it(dir, QStringList() << QStringLiteral("*.js"), QDir::Filters(), QDirIterator::Subdirectories);
+			QDirIterator it(dir, QStringList() << QStringLiteral("*.js"), QDir::Files | QDir::Readable, QDirIterator::Subdirectories);
 			while (it.hasNext()) {
-				if (!scriptFileNamesList.contains(it.next())) {
-					scriptFileNamesList.append(it.next());
-				}
+				scriptFileNamesSet.insert(it.next());
 			}
 		}
 
-		for(QStringList::iterator i = scriptFileNamesList.begin(); i != scriptFileNamesList.end(); ++i) {
-			registerScript(*i, pathIDMap, takenIDMap, maxID);
+		Q_FOREACH(const QString &scriptFileName, scriptFileNamesSet) {
+			registerScript(scriptFileName, pathIDMap, takenIDMap, maxID);
 		}
 		//rewrite the IDs that are currently in use
 		writeIDs();
@@ -335,7 +333,7 @@ namespace KileScript {
 
 	void Manager::populateDirWatch()
 	{
-		QStringList jScriptDirectories = QStandardPaths::locateAll(QStandardPaths::DataLocation, "scripts");
+		QStringList jScriptDirectories = QStandardPaths::locateAll(QStandardPaths::DataLocation, "scripts/", QStandardPaths::LocateDirectory);
 		for(QStringList::iterator i = jScriptDirectories.begin(); i != jScriptDirectories.end(); ++i) {
 			// FIXME: future KDE versions could support the recursive
 			//        watching of directories out of the box.
