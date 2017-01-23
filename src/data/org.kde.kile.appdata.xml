@@ -19,6 +19,7 @@
   <name xml:lang="sv">Kile</name>
   <name xml:lang="uk">Kile</name>
   <name xml:lang="x-test">xxKilexx</name>
+  <name xml:lang="zh-CN">Kile</name>
   <summary>TeX/LaTeX Editor</summary>
   <summary xml:lang="ca">Editor de TeX/LaTeX</summary>
   <summary xml:lang="ca-valencia">Editor de TeX/LaTeX</summary>
@@ -41,7 +42,9 @@
     <p xml:lang="ca-valencia">El Kile és un editor de TeX/LaTeX amigable del KDE.</p>
     <p xml:lang="en-GB">Kile is a user-friendly TeX/LaTeX editor by KDE.</p>
     <p xml:lang="es">Kile es un editor TeX/LaTeX amigable para KDE.</p>
+    <p xml:lang="it">Kile è un intuitivo editor TeX/LaTeX della comunità KDE.</p>
     <p xml:lang="nl">Kile is een gebruikersvriendelijke TeX/LaTeX bewerker door KDE.</p>
+    <p xml:lang="pl">Kile jest przyjaznym użytkownikowi edytorem TeX/LaTeX stworzonym przez KDE.</p>
     <p xml:lang="pt">o Kile é um editor de TeX/LaTeX amigável feito pelo KDE.</p>
     <p xml:lang="sv">Kile är en användarvänlig Tex- och Latex-editor av KDE.</p>
     <p xml:lang="uk">Kile — зручний у користуванні редактор коду TeX/LaTeX від KDE.</p>

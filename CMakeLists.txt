@@ -5,6 +5,8 @@ cmake_minimum_required(VERSION 3.0.0)
 find_package(ECM 5.19.0 REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
 
+include(KDECompilerSettings NO_POLICY_SCOPE)
+
 include(ECMAddAppIcon)
 include(ECMOptionalAddSubdirectory)
 include(ECMInstallIcons)
@@ -20,9 +22,8 @@ include(CheckFunctionExists)
 
 include(KDEInstallDirs)
 include(KDECMakeSettings)
-include(KDECompilerSettings NO_POLICY_SCOPE)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
+kde_enable_exceptions()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 find_package(Qt5 5.3 CONFIG REQUIRED
@@ -122,7 +123,7 @@ macro(KILE_ADD_TRANSLATION_DIRECTORY _sources _relative_dir _file _language)
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${_relative_dir}
 			COMMENT "Compiling ${_language} translation file")
 
-	install(FILES ${_compiled_file} DESTINATION ${LOCALE_INSTALL_DIR}/${_language}/LC_messageS)
+	install(FILES ${_compiled_file} DESTINATION ${LOCALE_INSTALL_DIR}/${_language}/LC_MESSAGES)
 	set(${_sources} ${${_sources}} ${_compiled_file})
 endmacro(KILE_ADD_TRANSLATION_DIRECTORY _sources _relative_dir _file _language)
 

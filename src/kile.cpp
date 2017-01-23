@@ -1361,18 +1361,18 @@ void Kile::updateModeStatus()
 
 	if(project) {
 		if (m_singlemode) {
-			statusBar()->changeItem(KileWidget::StatusBar::HintText, i18n("Project: %1", project->name()));
+			statusBar()->setHintText(i18n("Project: %1", project->name()));
 		}
 		else {
-			statusBar()->changeItem(KileWidget::StatusBar::HintText, i18n("Project: %1 (Master document: %2)", project->name(), shortName));
+			statusBar()->setHintText(i18n("Project: %1 (Master document: %2)", project->name(), shortName));
 		}
 	}
 	else {
 		if (m_singlemode) {
-			statusBar()->changeItem(KileWidget::StatusBar::HintText, i18n("Normal mode"));
+			statusBar()->setHintText(i18n("Normal mode"));
 		}
 		else {
-			statusBar()->changeItem(KileWidget::StatusBar::HintText, i18n("Master document: %1", shortName));
+			statusBar()->setHintText(i18n("Master document: %1", shortName));
 		}
 	}
 
@@ -1598,10 +1598,12 @@ void Kile::newCaption()
 {
 	KTextEditor::View *view = viewManager()->currentTextView();
 	if(view) {
+		const bool showFullPath = KileConfig::showFullPathInWindowTitle();
+
 		KTextEditor::Document *doc = view->document();
-		const QString caption = (doc->isReadWrite() ? getShortName(doc)
+		const QString caption = (doc->isReadWrite() ? getName(doc, !showFullPath)
 		                                            : i18nc("Window caption in read-only mode: <file name> [Read-Only]",
-		                                                    "%1 [Read-Only]", getShortName(doc)));
+		                                                    "%1 [Read-Only]", getName(doc, !showFullPath)));
 		setWindowTitle(caption);
 		if (m_bottomBar->currentPage() && m_bottomBar->currentPage()->inherits("KileWidget::Konsole")) {
 			m_texKonsole->sync();
@@ -2726,15 +2728,18 @@ void Kile::generalOptions()
 		saveLastSelectedAction(); // save the old current tools before calling setupTools() which calls restoreLastSelectedActions()
 		setupTools();
 		m_help->update();
+		newCaption(); // for the 'showFullPathInWindowTitle' setting
 
 		configurationManager()->emitConfigChanged();
 
 		//stop/restart LyX server if necessary
-		if (KileConfig::runLyxServer() && !m_lyxserver->isRunning())
+		if(KileConfig::runLyxServer() && !m_lyxserver->isRunning()) {
 			m_lyxserver->start();
+		}
 
-		if (!KileConfig::runLyxServer() && m_lyxserver->isRunning())
+		if(!KileConfig::runLyxServer() && m_lyxserver->isRunning()) {
 			m_lyxserver->stop();
+		}
 	}
 
 	delete dlg;
@@ -2751,18 +2756,46 @@ void Kile::slotPerformCheck()
 		livePreviewManager()->setLivePreviewEnabledForCurrentDocument(false);
 	}
 #endif
+	// we show the message output widget in the bottom bar and shrink the side bar
+	int sideBarTab = m_sideBar->currentTab();
+	int bottomBarTab = m_bottomBar->currentTab();
+
+	m_sideBar->shrink();
+	m_bottomBar->switchToTab(0); // show the log widget
+
+	int outputTab = m_errorHandler->currentOutputTabIndex();
+	m_errorHandler->showMessagesOutput();
+
 	QString currentMasterDocument = m_masterDocumentFileName;
 	if(!m_singlemode) {
 		clearMasterDocument();
 	}
+	// we hide the editor pane and tabs
+	m_viewManager->setTabsAndEditorVisible(false);
+
 	// now, we can run the tests
 	KileDialog::ConfigChecker *dlg = new KileDialog::ConfigChecker(this);
 	dlg->exec();
 	delete dlg;
+
 	// finally, we restore the rest to what it was before launching the tests
+	m_viewManager->setTabsAndEditorVisible(true);
 	if(!currentMasterDocument.isEmpty()) {
 		setMasterDocumentFileName(currentMasterDocument);
 	}
+
+	m_errorHandler->setCurrentOutputTab(outputTab);
+
+	if(sideBarTab >= 0) {
+		m_sideBar->switchToTab(sideBarTab);
+	}
+	if(bottomBarTab < 0) {
+		m_bottomBar->shrink();
+	}
+	else {
+		m_bottomBar->switchToTab(bottomBarTab);
+	}
+
 #if LIVEPREVIEW_AVAILABLE
 	if (livePreviewManager()) {
 		KileConfig::setPreviewEnabledForFreshlyOpenedDocuments(livePreviewEnabledForFreshlyOpenedDocuments);
@@ -3026,21 +3059,20 @@ void Kile::updateStatusBarCursorPosition(KTextEditor::View *view,
                                          const KTextEditor::Cursor &newPosition)
 {
 	if(!view) {
-		statusBar()->changeItem(KileWidget::StatusBar::LineColumn, QString());
+		statusBar()->clearLineColumn();
 	}
 	else {
-		statusBar()->changeItem(KileWidget::StatusBar::LineColumn,
-			i18n("Line: %1 Col: %2", newPosition.line() + 1, newPosition.column() + 1));
+		statusBar()->setLineColumn(newPosition.line() + 1, newPosition.column() + 1);
 	}
 }
 
 void Kile::updateStatusBarViewMode(KTextEditor::View *view)
 {
 	if(!view) {
-		statusBar()->changeItem(KileWidget::StatusBar::ViewMode, QString());
+		statusBar()->clearViewMode();
 	}
 	else {
-		statusBar()->changeItem(KileWidget::StatusBar::ViewMode, view->viewModeHuman());
+		statusBar()->setViewMode(view->viewModeHuman());
 	}
 }
 
@@ -3052,22 +3084,22 @@ void Kile::updateStatusBarInformationMessage(KTextEditor::View * /* view */, con
 void Kile::updateStatusBarSelection(KTextEditor::View *view)
 {
 	if(!view) {
-		statusBar()->changeItem(KileWidget::StatusBar::SelectionMode, QString());
+		statusBar()->clearSelectionMode();
 	}
 	else {
 		const QString text = view->blockSelection() ?
 					i18nc("@info:status status bar label for block selection mode", "BLOCK") + ' ' :
 					i18nc("@info:status status bar label for line selection mode", "LINE") + ' ';
-		statusBar()->changeItem(KileWidget::StatusBar::SelectionMode, text);
+		statusBar()->setSelectionMode(text);
 	}
 }
 
 void Kile::handleDocumentParsingStarted()
 {
-	statusBar()->changeItem(KileWidget::StatusBar::ParserStatus, i18n("Refreshing structure..."));
+	statusBar()->setParserStatus(i18n("Refreshing structure..."));
 }
 
 void Kile::handleDocumentParsingComplete()
 {
-	statusBar()->changeItem(KileWidget::StatusBar::ParserStatus, QString());
+	statusBar()->clearParserStatus();
 }

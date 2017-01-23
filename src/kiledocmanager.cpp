@@ -1458,8 +1458,10 @@ void Manager::projectOpenItem(KileProjectItem *item, bool openProjectItemViews)
 		// this is necessary to identify the correct LaTeX root document (bug 233667);
 		m_ki->structureWidget()->update(itemInfo, true);
 	}
-	else { // 'item' is not shown, i.e. its contents won't be loaded into a KTextEditor::Document;
-		// so, we have to do it: we are loading the contents of the project item into the docinfo
+	else if(item->type() == KileProjectItem::Source || item->type() == KileProjectItem::Package || item->type() == KileProjectItem::Bibliography) {
+		// 'item' is not shown (and it is either a LaTeX source file or package), i.e. its
+		// contents won't be loaded into a KTextEditor::Document; so, we have to do it:
+		// we are loading the contents of the project item into the docinfo
 		// for a moment
 		itemInfo->setDocumentContents(loadTextURLContents(item->url(), item->encoding()));
 		// in order to pass the contents to the parser
@@ -2500,21 +2502,35 @@ void Manager::deleteDocumentAndViewSettingsGroups(const QUrl &url)
 
 QStringList Manager::loadTextURLContents(const QUrl &url, const QString& encoding)
 {
-	QTemporaryFile file;
-	file.open();
-	auto downloadJob = KIO::file_copy(url, QUrl::fromLocalFile(file.fileName()), 0);
-	KJobWidgets::setWindow(downloadJob, m_ki->mainWindow());
-	if (!downloadJob->exec()) {
-		KILE_DEBUG_MAIN << "Cannot download resource: " << url;
-		file.close();
-		return QStringList();
+	QTemporaryFile *temporaryFile = Q_NULLPTR;
+	QString localFileName;
+	if(url.isLocalFile()) {
+		localFileName = url.path();
+	}
+	else { // only use KIO when we have to
+		temporaryFile = new QTemporaryFile();
+		if(!temporaryFile->open()) {
+			KILE_DEBUG_MAIN << "Cannot create temporary file for" << url;
+			delete temporaryFile;
+			return QStringList();
+		}
+		localFileName = temporaryFile->fileName();
+		auto downloadJob = KIO::file_copy(url, QUrl::fromLocalFile(localFileName), 0600, KIO::Overwrite);
+		KJobWidgets::setWindow(downloadJob, m_ki->mainWindow());
+		// FIXME: 'exec' should not be used!
+		if (!downloadJob->exec()) {
+			KILE_DEBUG_MAIN << "Cannot download resource: " << url;
+			KILE_DEBUG_MAIN << downloadJob->errorString();
+			delete temporaryFile;
+			return QStringList();
+		}
 	}
 
-	QFile localFile(file.fileName());
+	QFile localFile(localFileName);
 
 	if (!localFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		KILE_DEBUG_MAIN << "Cannot open source file: " << file.fileName();
-		file.close();
+		KILE_DEBUG_MAIN << "Cannot open source file: " << localFileName;
+		delete temporaryFile;
 		return QStringList();
 	}
 
@@ -2526,7 +2542,7 @@ QStringList Manager::loadTextURLContents(const QUrl &url, const QString& encodin
 	while(!stream.atEnd()) {
 		res.append(stream.readLine());
 	}
-	file.close();
+	delete temporaryFile;
 	return res;
 }
 
