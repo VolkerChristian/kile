@@ -145,7 +145,6 @@ set(kile_UI
 	widgets/helpconfigwidget.ui
 	widgets/latexconfigwidget.ui
 	widgets/latextoolconfigwidget.ui
-	widgets/librarytoolconfigwidget.ui
 	widgets/livepreviewconfigwidget.ui
 	widgets/maintoolconfigwidget.ui
 	widgets/newdocumentwidget.ui
@@ -167,7 +166,6 @@ set(kile_UI_SRCS
 	widgets/helpconfigwidget.cpp
 	widgets/latexconfigwidget.cpp
 	widgets/latextoolconfigwidget.cpp
-	widgets/librarytoolconfigwidget.cpp
 	widgets/livepreviewconfigwidget.cpp
 	widgets/maintoolconfigwidget.cpp
 	widgets/newdocumentwidget.cpp
@@ -190,8 +188,10 @@ set(kile_KCFG_SRCS kileconfig.kcfgc)
 
 kconfig_add_kcfg_files(kile_SRCS ${kile_KCFG_SRCS})
 
-# add icon to executable on windows and mac
-ecm_add_app_icon(kile_SRCS
+# add icon to executable on windows and mac;
+# workaround: as ecm_add_app_icon and kf5_add_kdeinit_executable don't work well together,
+# we use a variable named 'kile' at this point
+ecm_add_app_icon(kile
 	ICONS
 	${CMAKE_CURRENT_SOURCE_DIR}/data/icons/16-apps-kile.png
 	${CMAKE_CURRENT_SOURCE_DIR}/data/icons/22-apps-kile.png
@@ -200,6 +200,7 @@ ecm_add_app_icon(kile_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/data/icons/64-apps-kile.png
 	${CMAKE_CURRENT_SOURCE_DIR}/data/icons/128-apps-kile.png
 )
+set(kile_SRCS "${kile_SRCS};${kile}")
 
 # add the resource file containing the ui files
 qt5_add_resources(kile_SRCS kile.qrc)
@@ -261,15 +262,15 @@ install(TARGETS kdeinit_kile ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
 install(FILES net.sourceforge.kile.main.xml DESTINATION ${DBUS_INTERFACES_INSTALL_DIR})
 install(PROGRAMS org.kde.kile.desktop DESTINATION ${XDG_APPS_INSTALL_DIR})
 install(FILES kile.kcfg DESTINATION ${KCFG_INSTALL_DIR})
-install(FILES data/bibtexentries.rc data/biblatexentries.rc DESTINATION ${DATA_INSTALL_DIR}/kile)
+install(FILES data/bibtexentries.rc data/biblatexentries.rc DESTINATION ${KDE_INSTALL_DATAROOTDIR}/kile)
 install(FILES data/kile.categories DESTINATION ${KDE_INSTALL_CONFDIR})
 install(FILES data/org.kde.kile.appdata.xml DESTINATION ${CMAKE_INSTALL_METAINFODIR})
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
 	install(FILES data/kilestdtools-win.rc
-           DESTINATION ${DATA_INSTALL_DIR}/kile
+           DESTINATION ${KDE_INSTALL_DATAROOTDIR}/kile
            RENAME kilestdtools.rc)
 else(CMAKE_SYSTEM_NAME MATCHES "Windows")
 	install (FILES data/kilestdtools.rc
-           DESTINATION ${DATA_INSTALL_DIR}/kile)
+           DESTINATION ${KDE_INSTALL_DATAROOTDIR}/kile)
 endif(CMAKE_SYSTEM_NAME MATCHES "Windows")

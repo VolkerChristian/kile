@@ -16,14 +16,10 @@
 #include <config.h>
 
 KileWidgetAppearanceConfig::KileWidgetAppearanceConfig(KConfig *config, QWidget *parent)
- : QWidget(parent),
-   m_config(config)
+    : QWidget(parent),
+      m_config(config)
 {
-	setupUi(this);
-
-#if !LIVEPREVIEW_AVAILABLE
-	documentViewerGroupBox->setEnabled(false);
-#endif
+    setupUi(this);
 }
 
 KileWidgetAppearanceConfig::~KileWidgetAppearanceConfig()
