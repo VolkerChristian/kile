@@ -259,7 +259,7 @@ void PdfDialog::initUtilities()
 
     // if we found at least one utility, we can enable some connections
     if ( m_pdftk || m_pdfpages) {
-        connect(m_PdfDialog.m_edOutfile->lineEdit(), SIGNAL(textChanged(const QString &)), this, SLOT(slotOutputfileChanged(const QString &)));
+        connect(m_PdfDialog.m_edOutfile->lineEdit(), SIGNAL(textChanged(QString)), this, SLOT(slotOutputfileChanged(QString)));
         connect(m_PdfDialog.m_cbOverwrite, SIGNAL(stateChanged(int)), this, SLOT(slotOverwriteChanged(int)));
         connect(m_cbTask, SIGNAL(activated(int)), this, SLOT(slotTaskChanged(int)));
     }
@@ -404,7 +404,7 @@ void PdfDialog::setNumberOfPages(int numpages)
 
         QString pages;
         if ( m_encrypted )
-            m_PdfDialog.m_lbPages->setText(pages.setNum(m_numpages)+"   "+i18n("(encrypted)"));
+            m_PdfDialog.m_lbPages->setText(i18nc("%1 is the number of pages", "%1 (encrypted)", QString::number(m_numpages)));
         else
             m_PdfDialog.m_lbPages->setText(pages.setNum(m_numpages));
     }
@@ -473,7 +473,7 @@ void PdfDialog::readNumberOfPages(int scriptmode, const QString &output)
     }
     else {
         QString s = output;
-        numpages = s.remove("\n").toInt(&ok);
+        numpages = s.remove('\n').toInt(&ok);
     }
 
     setNumberOfPages(numpages);
@@ -717,7 +717,7 @@ QString PdfDialog::readPermissions()
     QString permissions;
     for (int i = 0; i < m_pdfPermissionKeys.size(); ++i) {
         if ( m_pdfPermissionWidgets.at(i)->isChecked() ) {
-            permissions += m_pdfPermissionPdftk.at(i) + " ";
+            permissions += m_pdfPermissionPdftk.at(i) + ' ';
         }
     }
     return permissions;
@@ -805,7 +805,7 @@ void PdfDialog::slotTaskChanged(int)
             s = i18n("All options for 'pdfpages'");
             m_PdfDialog.m_edParameter->setValidator(0);
         }
-        m_PdfDialog.m_lbParamInfo->setText(" (" + s + ")");
+        m_PdfDialog.m_lbParamInfo->setText(" (" + s + ')');
 
         m_PdfDialog.m_lbParameter->setText(labeltext);
         m_PdfDialog.m_lbParameter->show();
@@ -919,7 +919,7 @@ void PdfDialog::executeAction()
 
     // output for log window
     QString program = (m_execLatex) ? i18n("LaTeX with 'pdfpages' package") : i18n("pdftk");
-    QString msg = i18n("Rearranging PDF file: ") + from.fileName();
+    QString msg = i18n("Rearranging PDF file: %1", from.fileName());
     if (!to.fileName().isEmpty())
         msg += " ---> " + to.fileName();
     m_errorHandler->printMessage(KileTool::Info, msg, program);
@@ -1070,8 +1070,8 @@ void PdfDialog::executeScript(const QString &command, const QString &dir, int sc
             this, SLOT(slotProcessOutput()));
     connect(m_proc, SIGNAL(readyReadStandardError()),
             this, SLOT(slotProcessOutput()));
-    connect(m_proc, SIGNAL(finished(int, QProcess::ExitStatus)),
-            this, SLOT(slotProcessExited(int, QProcess::ExitStatus)));
+    connect(m_proc, SIGNAL(finished(int,QProcess::ExitStatus)),
+            this, SLOT(slotProcessExited(int,QProcess::ExitStatus)));
 
     KILE_DEBUG_MAIN << "=== PdfDialog::runPdfutils() ====================";
     KILE_DEBUG_MAIN << "execute '" << command << "'";
@@ -1499,7 +1499,7 @@ QString PdfDialog::buildPageList(bool even)
 
     int start = ( even ) ? 2 : 1;
     for (int i=start; i<=m_numpages; i+=2 ) {
-        s += number.setNum(i) + ",";
+        s += number.setNum(i) + ',';
     }
 
     if ( !s.isEmpty() ) {
@@ -1572,10 +1572,10 @@ QString PdfDialog::buildDeletePageList()
         }
         int to = searchPages(&arr,from+1,m_numpages,false) - 1;
         if ( !result.isEmpty() ) {
-            result += ",";
+            result += ',';
         }
         if ( from < to ) {
-            result += QString::number(from) + "-" + QString::number(to);
+            result += QString::number(from) + '-' + QString::number(to);
         }
         else {
             result += QString::number(from);
