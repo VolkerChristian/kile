@@ -75,7 +75,7 @@ class EditableItemDelegate : public QItemDelegate {
 public:
     EditableItemDelegate(QObject *parent = 0) : QItemDelegate(parent) {}
 
-    virtual void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex& index) const
+    virtual void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex& index) const override
     {
         drawBackground(painter, option, index);
 
@@ -237,7 +237,7 @@ QWidget *QuickDocument::setupClassOptions(QTabWidget *tab)
     // button
     QWidget *frame = new QWidget(classOptions);
     QHBoxLayout *hl = new QHBoxLayout();
-    hl->setMargin(0);
+    hl->setContentsMargins(0, 0, 0, 0);
     frame->setLayout(hl);
     gl->addWidget(frame, 5, 1, 1, 3, Qt::AlignCenter);
 
@@ -291,7 +291,7 @@ QWidget *QuickDocument::setupPackages(QTabWidget *tab)
     QWidget *frame = new QWidget(packages);
     vl->addWidget(frame);
     QHBoxLayout *hl = new QHBoxLayout();
-    hl->setMargin(0);
+    hl->setContentsMargins(0, 0, 0, 0);
     frame->setLayout(hl);
     hl->addStretch();
 
@@ -332,7 +332,7 @@ QWidget *QuickDocument::setupProperties(QTabWidget *tab)
 
     QWidget *personalInfoPage = new QWidget(tab);
     QVBoxLayout *vl = new QVBoxLayout();
-    vl->setMargin(0);
+    vl->setContentsMargins(0, 0, 0, 0);
     personalInfoPage->setLayout(vl);
 
     QWidget *personalInfo = new QWidget(personalInfoPage);

@@ -23,7 +23,6 @@
 #include <QTreeWidget>
 
 #include <QMenu>
-#include <KMimeTypeTrader>
 #include <KService>
 
 #include "documentinfo.h"
@@ -150,7 +149,7 @@ public Q_SLOTS:
     void slotConfigChanged();
 
 protected:
-    virtual void contextMenuEvent(QContextMenuEvent *event);
+    virtual void contextMenuEvent(QContextMenuEvent *event) override;
 
 private:
     StructureViewItem* parentFor(int lev, const QString &fldr);
@@ -218,7 +217,6 @@ public:
 public Q_SLOTS:
     void slotClicked(QTreeWidgetItem *);
     void slotDoubleClicked(QTreeWidgetItem *);
-    void slotPopupActivated(int id);
 
     void addDocumentInfo(KileDocument::Info *);
     void closeDocumentInfo(KileDocument::Info *);
@@ -256,7 +254,6 @@ private:
     StructureView* viewFor(KileDocument::Info *info);
     bool viewExistsFor(KileDocument::Info *info);
 
-    void slotPopupLabel(int id);
     void slotPopupSectioning(int id);
     void slotPopupGraphics(int id);
 

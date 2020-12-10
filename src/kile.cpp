@@ -1,6 +1,6 @@
 /****************************************************************************************
   Copyright (C) 2003 by Jeroen Wijnhout (Jeroen.Wijnhout@kdemail.net)
-            (C) 2007-2018 by Michel Ludwig (michel.ludwig@kdemail.net)
+            (C) 2007-2020 by Michel Ludwig (michel.ludwig@kdemail.net)
             (C) 2007 Holger Danielsson (holger.danielsson@versanet.de)
             (C) 2009 Thomas Braun (thomas.braun@virtuell-zuhause.de)
  ****************************************************************************************/
@@ -38,10 +38,10 @@
 #include <KEditToolBar>
 #include <KHelpMenu>
 #include <KIconLoader>
+#include <KIO/DesktopExecParser>
 #include <KLocalizedString>
 #include <KMessageBox>
 #include <KRecentFilesAction>
-#include <KRun>
 #include <KShortcutsDialog>
 #include <KToggleAction>
 #include <KXMLGUIFactory>
@@ -94,6 +94,7 @@
 #include "symbolviewclasses.h"
 #include "livepreview.h"
 #include "parser/parsermanager.h"
+#include "scripting/script.h"
 
 #include "dialogs/usermenu/usermenudialog.h"
 #include "usermenu/usermenudata.h"
@@ -170,7 +171,7 @@ Kile::Kile(bool allowRestore, QWidget *parent)
         return;
     }
 
-    QSplashScreen splashScreen(QPixmap(QStandardPaths::locate(QStandardPaths::DataLocation, "pics/kile_splash.png")), Qt::WindowStaysOnTopHint);
+    QSplashScreen splashScreen(QPixmap(KileUtilities::locate(QStandardPaths::AppDataLocation, "pics/kile_splash.png")), Qt::WindowStaysOnTopHint);
     if(KileConfig::showSplashScreen()) {
         splashScreen.show();
         qApp->processEvents();
@@ -299,6 +300,17 @@ Kile::Kile(bool allowRestore, QWidget *parent)
             // needed
         }
     }
+    if(KileConfig::rCVersion() < 9) {
+        // in Kile 3.0 beta 4, the user help was updated, some old config settings were no longer needed
+        if(m_config->hasGroup("Help")) {
+            KConfigGroup helpGroup = m_config->group("Help");
+            helpGroup.deleteEntry("location");
+            helpGroup.deleteEntry("texrefs");
+            helpGroup.deleteEntry("external");
+            helpGroup.deleteEntry("embedded");
+        }
+    }
+
     readGUISettings();
     readRecentFileSettings();
     readConfig();
@@ -404,6 +416,12 @@ Kile::Kile(bool allowRestore, QWidget *parent)
     // version 3.0 regarding the newly introduced live preview feature
     const QString& lastVersionRunFor = KileConfig::systemCheckLastVersionRunForAtStartUp();
     if(lastVersionRunFor.isEmpty() || compareVersionStrings(lastVersionRunFor, "2.9.91") < 0) {
+#ifdef Q_OS_WIN
+        // work around the problem that Sonnet's language auto-detection feature doesn't work
+        // together with KatePart (as of 08 November 2019)
+        QSettings settings(QStringLiteral("KDE"), QStringLiteral("Sonnet"));
+        settings.setValue(QStringLiteral("autodetectLanguage"), false);
+#endif
         slotPerformCheck();
         KileConfig::setSystemCheckLastVersionRunForAtStartUp(kileFullVersion);
     }
@@ -690,7 +708,7 @@ void Kile::setupBottomBar()
 
     QWidget *widget = new QWidget(this);
     QHBoxLayout *layout = new QHBoxLayout(widget);
-    layout->setMargin(0);
+    layout->setContentsMargins(0, 0, 0, 0);
     widget->setLayout(layout);
 
     m_latexOutputErrorToolBar = new KToolBar(widget);
@@ -1010,15 +1028,11 @@ void Kile::setupActions()
         WatchFileAction->setChecked(false);
     }
 
-    createAction(i18n("TeX Guide"), "help_tex_guide", QKeySequence("CTRL+Alt+H, G"), m_help, &KileHelp::Help::helpTexGuide);
     createAction(i18n("LaTeX"), "help_latex_index", QKeySequence("CTRL+Alt+H, L"), m_help, &KileHelp::Help::helpLatexIndex);
-    createAction(i18n("LaTeX Command"), "help_latex_command", QKeySequence("CTRL+Alt+H, C"), m_help, &KileHelp::Help::helpLatexCommand);
-    createAction(i18n("LaTeX Subject"), "help_latex_subject", QKeySequence("CTRL+Alt+H, S"), m_help, &KileHelp::Help::helpLatexSubject);
-    createAction(i18n("LaTeX Env"), "help_latex_env", QKeySequence("CTRL+Alt+H, E"), m_help, &KileHelp::Help::helpLatexEnvironment);
+    createAction(i18n("LaTeX Commands"), "help_latex_command", QKeySequence("CTRL+Alt+H, C"), m_help, &KileHelp::Help::helpLatexCommand);
+    createAction(i18n("LaTeX Environments"), "help_latex_env", QKeySequence("CTRL+Alt+H, E"), m_help, &KileHelp::Help::helpLatexEnvironment);
     createAction(i18n("Context Help"), "help_context", QKeySequence("CTRL+Alt+H, K"), m_help, [this]() { m_help->helpKeyword(); });
     createAction(i18n("Documentation Browser"), "help_docbrowser", QKeySequence("CTRL+Alt+H, B"), m_help, &KileHelp::Help::helpDocBrowser);
-
-    createAction(i18n("LaTeX Reference"), "help_latex_reference", "help-latex", this, &Kile::helpLaTex);
 
     createAction(i18n("&About Editor Component"), "help_about_editor", this, &Kile::aboutEditorComponent);
 
@@ -2283,8 +2297,9 @@ void Kile::quickPdf()
     }
 
     KileDialog::PdfDialog *dlg = new KileDialog::PdfDialog(m_mainWindow, texFileName, startDir, m_extensions->latexDocuments(), m_manager, errorHandler(), m_outputWidget);
-    dlg->exec();
-    delete dlg;
+    connect(dlg, &QDialog::finished, dlg, &QObject::deleteLater);
+
+    dlg->open();
 }
 
 void Kile::quickUserMenuDialog()
@@ -2325,21 +2340,6 @@ void Kile::updateUserMenuStatus(bool state)
     }
 }
 
-void Kile::helpLaTex()
-{
-    QString loc = QStandardPaths::locate(QStandardPaths::DataLocation, "help/latexhelp.html");
-    KileTool::Base *tool = toolManager()->createTool("ViewHTML", QString(), false);
-    if(!tool) {
-        errorHandler()->printMessage(KileTool::Error, i18n("Could not create the \"ViewHTML\" tool. Please reset the tools."));
-        return;
-    }
-    tool->setFlags(KileTool::NeedSourceExists | KileTool::NeedSourceRead);
-    tool->setSource(loc);
-    tool->setTargetPath(loc);
-    tool->prepareToRun();
-    m_manager->run(tool);
-}
-
 void Kile::readGUISettings()
 {
 }
@@ -2348,7 +2348,7 @@ void Kile::readGUISettings()
 void Kile::transformOldUserTags()
 {
     KILE_DEBUG_MAIN << "Convert old user tags";
-    QString xmldir = QStandardPaths::writableLocation(QStandardPaths::DataLocation) + "/usermenu/";
+    QString xmldir = KileUtilities::writableLocation(QStandardPaths::AppDataLocation) + "/usermenu/";
     // create dir if not existing
     QDir testDir(xmldir);
     if (!testDir.exists()) {
@@ -2430,7 +2430,7 @@ void Kile::transformOldUserSettings()
             KileTool::setGUIOptions(tempItem.name, "Other", "preferences-other", m_config.data());
 
             KConfigGroup group = m_config->group(KileTool::groupFor(tempItem.name, "Default"));
-            QString bin = KRun::binaryName(tempItem.tag, false);
+            QString bin = KIO::DesktopExecParser::executablePath(tempItem.tag);
             group.writeEntry("command", bin);
             group.writeEntry("options", tempItem.tag.mid(bin.length()));
             group.writeEntry("class", "Base");
@@ -2558,17 +2558,7 @@ void Kile::saveSettings()
     KileConfig::setVerticalSplitterTop(*it);
     ++it;
     KileConfig::setVerticalSplitterBottom(*it);
-#ifdef __GNUC__
-#warning Restoring the side bar sizes from minimized after start up does not work perfectly yet!
-#endif
-// 	// sync vertical splitter and size of bottom bar
-// 	int sizeBottomBar = m_bottomBar->directionalSize();
-// 	if(m_bottomBar->isVisible()) {
-// 		sizeBottomBar = m_verSplitBottom;
-// 	}
-// 	else {
-// 		m_verSplitBottom = sizeBottomBar;
-// 	}
+
     KileConfig::setSideBar(!m_sideBar->isHidden()); // do not use 'isVisible()'!
     KileConfig::setSideBarSize(m_sideBar->directionalSize());
     KileConfig::setBottomBar(!m_bottomBar->isHidden()); // do not use 'isVisible()'!
@@ -2764,13 +2754,27 @@ void Kile::configureKeys()
     if(part) {
         dlg.addCollection(part->actionCollection());
     }
+    connect(&dlg, &KShortcutsDialog::saved, this, [this]() {
+        // tell all the documents and views to update their action shortcuts (bug 247646)
+        docManager()->reloadXMLOnAllDocumentsAndViews();
+
+        // tell m_userMenu that key bindings may have been changed
+        m_userMenu->updateKeyBindings();
+
+        // transfer the shortcuts to the scripts
+        const QList<KileScript::Script*> scripts = scriptManager()->getScripts();
+        for(KileScript::Script *script : scripts) {
+            QAction *action = script->getActionObject();
+
+            if(action && !action->shortcut().isEmpty()) {
+                scriptManager()->setShortcut(script, action->shortcut());
+            }
+        }
+
+        scriptManager()->writeConfig();
+        m_scriptsManagementWidget->update();
+    });
     dlg.configure();
-
-    // tell all the documents and views to update their action shortcuts (bug 247646)
-    docManager()->reloadXMLOnAllDocumentsAndViews();
-
-    // tell m_userMenu that key bindings may have been changed
-    m_userMenu->updateKeyBindings();
 }
 
 void Kile::configureToolbars()

@@ -17,11 +17,10 @@
 #include <KConfig>
 #include <KLocalizedString>
 #include <KMainWindow>
-#include <QStandardPaths>
-
 
 #include "kileactions.h"
 #include "editorextension.h"
+#include "utilities.h"
 
 namespace KileStdActions
 {
@@ -138,12 +137,7 @@ void setupStdTags(KileInfo *ki, const QObject* receiver, KActionCollection *acti
 
     (void) new KileAction::Tag(i18n("Underline - \\underline{}"), i18n("Underline"), "format-text-underline", QKeySequence(), receiver, SLOT(insertTag(KileAction::TagData)), actionCollection,"tag_underline", "\\underline{","}",11);
 
-    QAction *action = actionCollection->addAction("tag_newline", ki->editorExtension(), SLOT(insertIntelligentNewline()));
-    action->setText(i18n("Smart New Line"));
-    actionCollection->setDefaultShortcut(action, QKeySequence(Qt::CTRL + Qt::Key_Return));
-    action->setIcon(QIcon::fromTheme("smartnewline"));
-
-    action = actionCollection->addAction("tag_tabulator", ki->editorExtension(), SLOT(insertIntelligentTabulator()));
+    QAction *action = actionCollection->addAction("tag_tabulator", ki->editorExtension(), SLOT(insertIntelligentTabulator()));
     action->setText(i18n("Smart Tabulator"));
     actionCollection->setDefaultShortcut(action, QKeySequence(Qt::ALT + Qt::Key_Ampersand));
 
@@ -228,7 +222,7 @@ void setupBibTags(const QObject *receiver, KActionCollection *actionCollection, 
         menu->addAction(new KileAction::Tag(i18n("Bibliography Generation - \\bibliography{}"), i18n("Bibliography Generation"), QKeySequence(), receiver, SLOT(insertTag(KileAction::TagData)), actionCollection,"tag_bibliography","\\bibliography{%S", "}\n",14, 0,i18n("The argument to \\bibliography refers to the bib file (without extension)\nwhich should contain your database in BibTeX format.\nKile inserts automatically the base name of the TeX file")));
         menu->addSeparator();
 
-        filename = QStandardPaths::locate(QStandardPaths::DataLocation, "bibtexentries.rc");
+        filename = KileUtilities::locate(QStandardPaths::AppDataLocation, "bibtexentries.rc");
     }
     else if(KileConfig::bibliographyType() == QString("biblatex")) {
 
@@ -246,7 +240,7 @@ void setupBibTags(const QObject *receiver, KActionCollection *actionCollection, 
         Print Bibliography by Section - \bibbysection[]
         Print List of Shorthands - \printshorthands
         */
-        filename = QStandardPaths::locate(QStandardPaths::DataLocation, "biblatexentries.rc");
+        filename = KileUtilities::locate(QStandardPaths::AppDataLocation, "biblatexentries.rc");
     }
     else {
         filename.clear();

@@ -23,7 +23,6 @@
 #include <QLayout>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QStandardPaths>
 #include <QTreeWidget>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -40,6 +39,7 @@
 #include "kileextensions.h"
 #include "kileinfo.h"
 #include "templates.h"
+#include "utilities.h"
 
 class TemplateListViewItem : public QTreeWidgetItem {
 public:
@@ -78,7 +78,7 @@ ManageTemplatesDialog::ManageTemplatesDialog(KileTemplate::Manager *templateMana
     page->setObjectName("managetemplates_mainwidget");
     mainLayout->addWidget(page);
     QGridLayout *topLayout = new QGridLayout();
-    topLayout->setMargin(0);
+    topLayout->setContentsMargins(0, 0, 0, 0);
     page->setLayout(topLayout);
 
     topLayout->addWidget(new QLabel(i18n("Name:"), page), 0, 0);
@@ -96,7 +96,7 @@ ManageTemplatesDialog::ManageTemplatesDialog(KileTemplate::Manager *templateMana
     topLayout->addWidget(new QLabel(i18n("Type: %1", KileInfo::documentTypeToString(m_templateType)), page), 0, 2);
     topLayout->addWidget(new QLabel(i18n("Icon:"), page), 1, 0);
 
-    m_iconEdit = new QLineEdit(QStandardPaths::locate(QStandardPaths::DataLocation, "pics/type_Default.png"), page);
+    m_iconEdit = new QLineEdit(KileUtilities::locate(QStandardPaths::AppDataLocation, "pics/type_Default.png"), page);
     mainLayout->addWidget(m_iconEdit);
     topLayout->addWidget(m_iconEdit, 1, 1);
 
@@ -159,7 +159,6 @@ ManageTemplatesDialog::ManageTemplatesDialog(KileTemplate::Manager *templateMana
     setModal(true);
 
     QVBoxLayout *mainLayout = new QVBoxLayout();
-    mainLayout->setMargin(0);
     setLayout(mainLayout);
 
     m_templateList = new QTreeWidget(this);
@@ -292,11 +291,10 @@ void ManageTemplatesDialog::addTemplate()
             reject();
             return;
         }
-        returnValue = m_templateManager->replace(templateInfo, m_sourceURL, templateName, iconURL);
     }
-    else {
-        returnValue = m_templateManager->add(m_sourceURL, templateName, iconURL);
-    }
+
+    returnValue = m_templateManager->add(m_sourceURL, templateName, iconURL);
+
     if (!returnValue) {
         KMessageBox::error(this, i18n("Failed to create the template."));
         reject();
@@ -316,17 +314,6 @@ bool ManageTemplatesDialog::removeTemplate()
     Q_ASSERT(templateItem);
 
     KileTemplate::Info templateInfo = templateItem->getTemplateInfo();
-
-    KIO::StatJob* statJob = KIO::stat(QUrl::fromUserInput(templateInfo.path), KIO::StatJob::DestinationSide, 0);
-    KIO::StatJob* statJob2 = KIO::stat(QUrl::fromUserInput(templateInfo.icon), KIO::StatJob::DestinationSide, 0);
-    KJobWidgets::setWindow(statJob, this);
-    KJobWidgets::setWindow(statJob2, this);
-    statJob->exec();
-    statJob2->exec();
-    if ((statJob->error() && statJob2->error()) || !QFileInfo(templateInfo.icon).exists()) {
-        KMessageBox::error(this, i18n("Sorry, but you do not have the necessary permissions to remove the selected template."));
-        return false;
-    }
 
     if (KMessageBox::warningYesNo(this, i18n("You are about to remove the template \"%1\"; are you sure?", templateInfo.name)) == KMessageBox::No) {
         return false;

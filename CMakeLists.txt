@@ -28,7 +28,7 @@ include(KDECMakeSettings)
 kde_enable_exceptions()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake/modules)
 
-find_package(Qt5 5.3 CONFIG REQUIRED
+find_package(Qt5 5.6 CONFIG REQUIRED
 	Core
 	DBus
 	Widgets
@@ -36,7 +36,7 @@ find_package(Qt5 5.3 CONFIG REQUIRED
 	Test
 )
 
-find_package(KF5 5.31 REQUIRED COMPONENTS
+find_package(KF5 5.68 REQUIRED COMPONENTS
 	Config
 	CoreAddons
 	Crash
@@ -46,7 +46,6 @@ find_package(KF5 5.31 REQUIRED COMPONENTS
 	I18n
 	IconThemes
 	Init
-	KHtml
 	KIO
 	Parts
 	TextEditor
@@ -57,7 +56,7 @@ find_package(KF5 5.31 REQUIRED COMPONENTS
 find_package(Okular5 REQUIRED)
 set_package_properties(Okular5 PROPERTIES
 	DESCRIPTION "Okular core library"
-	URL "http://okular.kde.org")
+	URL "https://okular.kde.org")
 
 find_package(Poppler COMPONENTS Qt5)
 set_package_properties("Poppler" PROPERTIES
@@ -122,7 +121,6 @@ install(FILES
 		README
 		README.cwl
 		kile-remote-control.txt
-		README.MacOSX
 	DESTINATION ${KDE_INSTALL_DATAROOTDIR}/doc/kile)
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
